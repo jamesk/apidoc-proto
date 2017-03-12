@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+// A test service definition.
+service Tester {
+    rpc SendTest (TestRequest) returns (TestReply) {}
+}
+
+message TestRequest {
+    string value = 1;
+}
+
+message TestReply {
+    string message = 1;
+}
