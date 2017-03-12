@@ -1,0 +1,250 @@
+{
+  "apidoc": {
+    "version": "0.11.68"
+  },
+  "name": "test-apidoc-proto-ticket",
+  "organization": {
+    "key": "jamesk"
+  },
+  "application": {
+    "key": "test-apidoc-proto"
+  },
+  "namespace": "com.gtoet.test-apidoc-proto.ticket",
+  "version": "0.1.1",
+  "info": {},
+  "headers": [],
+  "imports": [],
+  "enums": [
+    {
+      "name": "ticketType",
+      "plural": "ticketTypes",
+      "values": [
+        {
+          "name": "feature",
+          "attributes": []
+        },
+        {
+          "name": "bug",
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    },
+    {
+      "name": "size",
+      "plural": "sizes",
+      "values": [
+        {
+          "name": "small",
+          "attributes": []
+        },
+        {
+          "name": "medium",
+          "attributes": []
+        },
+        {
+          "name": "large",
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    }
+  ],
+  "unions": [
+    {
+      "name": "ticket",
+      "plural": "tickets",
+      "types": [
+        {
+          "type": "feature",
+          "attributes": []
+        },
+        {
+          "type": "bug",
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    }
+  ],
+  "models": [
+    {
+      "name": "bug",
+      "plural": "bugs",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "required": true,
+          "attributes": [],
+          "description": "Unique (across tickets) identifier for the bug."
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "problem",
+          "type": "string",
+          "required": false,
+          "attributes": []
+        },
+        {
+          "name": "affectedVersion",
+          "type": "integer",
+          "required": true,
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    },
+    {
+      "name": "feature",
+      "plural": "features",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "required": true,
+          "attributes": [],
+          "description": "Unique identifier (across tickets) for the feature."
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "required": true,
+          "attributes": []
+        },
+        {
+          "name": "story",
+          "type": "string",
+          "required": false,
+          "attributes": []
+        },
+        {
+          "name": "acceptanceCriteria",
+          "type": "string",
+          "required": false,
+          "attributes": []
+        },
+        {
+          "name": "size",
+          "type": "size",
+          "default": "medium",
+          "required": true,
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    }
+  ],
+  "resources": [
+    {
+      "type": "ticket",
+      "plural": "tickets",
+      "operations": [
+        {
+          "method": "GET",
+          "parameters": [],
+          "responses": [
+            {
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "[ticket]"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "GET",
+          "path": "/bugs",
+          "parameters": [],
+          "responses": [
+            {
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "[bug]"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "GET",
+          "path": "/features",
+          "parameters": [],
+          "responses": [
+            {
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "[feature]"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "GET",
+          "path": "/:id",
+          "parameters": [
+            {
+              "name": "id",
+              "type": "uuid",
+              "location": "Path",
+              "required": true
+            }
+          ],
+          "responses": [
+            {
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "ticket"
+            },
+            {
+              "code": {
+                "integer": {
+                  "value": 404
+                }
+              },
+              "type": "unit"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "POST",
+          "parameters": [],
+          "responses": [
+            {
+              "code": {
+                "integer": {
+                  "value": 201
+                }
+              },
+              "type": "ticket"
+            }
+          ],
+          "attributes": [],
+          "body": {
+            "type": "ticket",
+            "attributes": []
+          }
+        }
+      ],
+      "attributes": []
+    }
+  ],
+  "attributes": []
+}
