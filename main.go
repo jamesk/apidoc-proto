@@ -1,11 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"io/ioutil"
+	"bufio"
+	"os"
 
-	"github.com/golang/protobuf/proto"
-	proto2 "github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/emicklei/proto"
 	"github.com/jamesk/apidoc-proto/apidoc"
 )
 
@@ -15,54 +14,44 @@ func main() {
 		panic(err)
 	}
 
-	pFile, err := getProtoFromAPISpec(aSpec)
+	pFile := getProtoFromAPISpec(aSpec)
+
+	//TODO: safe name?
+	f, err := os.Create(aSpec.Name + ".proto")
 	if err != nil {
 		panic(err)
 	}
+	defer f.Close()
 
-	fmt.Println(proto.MarshalTextString(&pFile))
-
-	ioutil.WriteFile("test_service.proto", []byte(proto.MarshalTextString(&pFile)), 0666)
+	w := bufio.NewWriter(f)
+	proto.NewFormatter(w, "  ").Format(&pFile)
+	w.Flush()
 }
 
-func getProtoFromAPISpec(spec apidoc.Spec) (proto2.FileDescriptorProto, error) {
-	pFile := proto2.FileDescriptorProto{}
+const (
+	syntaxVersion = "proto3"
+)
 
-	syntax := "proto3"
-	pFile.Syntax = &syntax
-	pFile.Name = &spec.Name
+func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
+	pFile := proto.Proto{}
+
+	pFile.Elements = append(
+		pFile.Elements,
+		&proto.Syntax{Value: syntaxVersion},
+	)
+
 	for _, aEnum := range spec.Enums {
-		pEnum := proto2.EnumDescriptorProto{}
-
-		pEnum.Name = &aEnum.Name
+		pEnum := proto.Enum{Name: aEnum.Name}
 		for i, aValue := range aEnum.Values {
-			pEnumValue := proto2.EnumValueDescriptorProto{}
-			pEnumValue.Name = &aValue.Name
 
-			enumIndex := int32(i)
-			pEnumValue.Number = &enumIndex
-
-			pEnum.Value = append(pEnum.Value, &pEnumValue)
+			pEnum.Elements = append(
+				pEnum.Elements,
+				&proto.EnumField{Name:aValue.Name, Integer:i},
+			)
 		}
-
-
-		pFile.EnumType = append(pFile.EnumType, &pEnum)
+		pFile.Elements = append(pFile.Elements, &pEnum)
 	}
-//rpc SendTest (TestRequest) returns (TestReply) {}
-	m := proto2.MethodDescriptorProto{}
-	mName := "aFunc"
-	mInputType := "int32"
-	mOutputType := "int32"
-	m.Name = &mName
-	m.InputType = &mInputType
-	m.OutputType = &mOutputType
 
-	s := proto2.ServiceDescriptorProto{}
-	sName := "MyService"
-	s.Name = &sName
-	s.Method = []*proto2.MethodDescriptorProto{&m}
-	pFile.Service = []*proto2.ServiceDescriptorProto{&s}
-
-	return pFile, nil
+	return pFile
 }
 
