@@ -24,6 +24,8 @@ func main() {
 func getProtoFromAPISpec(spec apidoc.Spec) (proto2.FileDescriptorProto, error) {
 	pFile := proto2.FileDescriptorProto{}
 
+	syntax := "proto3"
+	pFile.Syntax = &syntax
 	pFile.Name = &spec.Name
 	for _, aEnum := range spec.Enums {
 		pEnum := proto2.EnumDescriptorProto{}
