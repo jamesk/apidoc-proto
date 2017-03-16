@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 
+	"github.com/golang/protobuf/proto"
 	proto2 "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/jamesk/apidoc-proto/apidoc"
 )
@@ -18,7 +20,9 @@ func main() {
 		panic(err)
 	}
 
-	ioutil.WriteFile("test_service.proto", []byte(pFile.String()), 0)
+	fmt.Println(proto.MarshalTextString(&pFile))
+
+	ioutil.WriteFile("test_service.proto", []byte(proto.MarshalTextString(&pFile)), 0666)
 }
 
 func getProtoFromAPISpec(spec apidoc.Spec) (proto2.FileDescriptorProto, error) {
@@ -44,6 +48,20 @@ func getProtoFromAPISpec(spec apidoc.Spec) (proto2.FileDescriptorProto, error) {
 
 		pFile.EnumType = append(pFile.EnumType, &pEnum)
 	}
+//rpc SendTest (TestRequest) returns (TestReply) {}
+	m := proto2.MethodDescriptorProto{}
+	mName := "aFunc"
+	mInputType := "int32"
+	mOutputType := "int32"
+	m.Name = &mName
+	m.InputType = &mInputType
+	m.OutputType = &mOutputType
+
+	s := proto2.ServiceDescriptorProto{}
+	sName := "MyService"
+	s.Name = &sName
+	s.Method = []*proto2.MethodDescriptorProto{&m}
+	pFile.Service = []*proto2.ServiceDescriptorProto{&s}
 
 	return pFile, nil
 }
