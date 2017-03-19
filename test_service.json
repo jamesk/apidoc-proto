@@ -16,21 +16,6 @@
   "imports": [],
   "enums": [
     {
-      "name": "ticketType",
-      "plural": "ticketTypes",
-      "values": [
-        {
-          "name": "feature",
-          "attributes": []
-        },
-        {
-          "name": "bug",
-          "attributes": []
-        }
-      ],
-      "attributes": []
-    },
-    {
       "name": "size",
       "plural": "sizes",
       "values": [
