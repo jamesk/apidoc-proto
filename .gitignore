@@ -59,4 +59,4 @@ fabric.properties
 
 
 #Project Ignores
-test_service.proto
+test*.proto
