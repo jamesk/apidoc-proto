@@ -2,12 +2,13 @@ package main
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/emicklei/proto"
 	"github.com/jamesk/apidoc-proto/apidoc"
-	"strings"
-	"errors"
 )
 
 func main() {
@@ -58,12 +59,14 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 	for _, aModel := range spec.Models {
 		pMessage := proto.Message{Name: aModel.Name}
 		for i, aField := range aModel.Fields {
-
-			//Apidoc types: boolean, date-iso8601, date-time-iso8601, decimal, double, integer, long, object, string, unit, uuid
+			field, err := getProtoFieldFromApidoc(aField, i+1)
+			if err != nil {
+				panic(err)
+			}
 
 			pMessage.Elements = append(
 				pMessage.Elements,
-				&proto. {Name:aValue.Name, Integer:i},
+				field,
 			)
 		}
 		pFile.Elements = append(pFile.Elements, &pMessage)
@@ -77,68 +80,74 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 }
 
 func getProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (proto.Visitee, error) {
-	//Apidoc types: boolean, date-iso8601, date-time-iso8601, decimal, double, integer, long, object, string, unit, uuid
 	if strings.HasPrefix(aField.FieldType, "map[") {
 		return getMapProtoFieldFromApidoc(aField, sequenceNumber)
 	}
 
-	getNormalProtoFieldFromApidoc(aField, sequenceNumber)
+	return getNormalProtoFieldFromApidoc(aField, sequenceNumber)
 }
 
-func getNormalProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (proto.NormalField, error) {
-	pField := proto.NormalField{}
+func getNormalProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (*proto.NormalField, error) {
+	pField := proto.NormalField{Field: &proto.Field{}}
 
 	fieldType := aField.FieldType
 	if strings.HasPrefix(fieldType, "[") {
 		if !strings.HasSuffix(fieldType, "]") {
-			return pField, errors.New("Invalid type, starts with a [ but does not end with one")
+			return nil, errors.New("Invalid type, starts with a [ but does not end with one")
 		}
 
 		pField.Repeated = true
 		fieldType = fieldType[1:len(fieldType)-1]
 	}
 
-	pType, err := getProtoTypeFromBasicApidocType(fieldType)
-	if err != nil {
-		return pField, err
+	pType := getProtoTypeFromBasicApidocType(fieldType)
+	if len(pType) == 0 {
+		return nil, createUnsupportedError(aField.Name, pType)
 	}
 	pField.Type = pType
 
 	pField.Sequence = sequenceNumber
+	pField.Name = aField.Name
 
-	return pField, nil
+	return &pField, nil
 }
 
-func getMapProtoFieldFromApidoc(aField apidoc.Field) (proto.MapField, error) {
-	return proto.MapField{}, errors.New("Map fields are unsupported at the moment")
+func getMapProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (*proto.MapField, error) {
+	return &proto.MapField{}, createUnsupportedError(aField.Name, "map")
 }
 
-func getProtoTypeFromBasicApidocType(basicType string) (string, error) {
+func getProtoTypeFromBasicApidocType(basicType string) string {
 	switch basicType {
 	case "boolean":
-		return "bool", nil
+		return "bool"
 	case "date-iso8601":
-		return "string", nil
+		return "string"
 	case "date-time-iso8601":
-		return "string", nil
+		return "string"
 	case "decimal":
-		return "", errors.New("Cannot translate decimal field types to proto type")
+		return ""
 	case "double":
-		return "double", nil
+		return "double"
 	case "integer":
-		return "int32", nil
+		return "int32"
 	case "long":
-		return "int64", nil
+		return "int64"
 	case "object":
-		return "", errors.New("Cannot translate object field types to proto type")
+		return ""
 	case "string":
-		return "string", nil
+		return "string"
 	case "unit":
-		return "", errors.New("Cannot translate unit field types to proto type")
+		return ""
 	case "uuid":
-		return "string", nil
+		return "string"
 	default:
-		//Custom type or wrong type
-		return basicType, nil
+		//Custom type or wrong type, can't tell here
+		return basicType
 	}
+}
+
+
+type UnsupportedTypeError error
+func createUnsupportedError(fieldName string, fieldType string) error {
+	return UnsupportedTypeError(errors.New(fmt.Sprintf("Cannot translate field [%s], field type: [%s] is unsupported", fieldName, fieldType)))
 }
