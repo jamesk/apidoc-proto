@@ -49,7 +49,7 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 
 			pEnum.Elements = append(
 				pEnum.Elements,
-				&proto.EnumField{Name:aValue.Name, Integer:i},
+				&proto.EnumField{Name: aValue.Name, Integer: i},
 			)
 		}
 		pFile.Elements = append(pFile.Elements, &pEnum)
@@ -59,7 +59,7 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 	for _, aModel := range spec.Models {
 		pMessage := proto.Message{Name: aModel.Name}
 		for i, aField := range aModel.Fields {
-			field, err := getProtoFieldFromApidoc(aField, i+1)
+			field, err := getProtoFieldFromApidoc(aField, i+1) //TODO: how to handle sequence number changes
 			if err != nil {
 				panic(err)
 			}
@@ -75,8 +75,52 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 	//Unions
 
 	//Resources
+	service := proto.Service{Name: spec.Name}
+	pFile.Elements = append(pFile.Elements, &service)
+
+	for _, resource := range spec.Resources {
+		for _, operation := range resource.Operations {
+			rpc := proto.RPC{}
+
+			rpc.Name = getProtoMethodName(resource, operation)
+			//Handle gathering path, query and body params into one argument (or don't bother??)
+			service.Elements = append(service.Elements, rpc)
+		}
+	}
 
 	return pFile
+}
+
+func getProtoMethodName(resource apidoc.Resource, operation apidoc.Operation) string {
+	if len(operation.Path) == 0 {
+		return convertPathToProtoName(resource.Path)
+	}
+
+	parts := append(strings.Split(resource.Path, "/"), strings.Split(operation.Path, "/")...)
+
+	return convertPathSegmentsToProtoName(parts)
+}
+
+func convertPathToProtoName(path string) string {
+	parts := strings.Split(strings.TrimSuffix(path, "/"), "/")
+
+	return convertPathSegmentsToProtoName(parts)
+}
+
+func convertPathSegmentsToProtoName(parts []string) string {
+	name := ""
+	for _, part := range parts {
+		if len(part) == 0 {
+			continue
+		}
+		if part[0] == ':' {
+			continue
+		}
+
+		name += strings.ToUpper(part[:1]) + part[1:]
+	}
+
+	return name
 }
 
 func getProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (proto.Visitee, error) {
@@ -97,7 +141,7 @@ func getNormalProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (*pr
 		}
 
 		pField.Repeated = true
-		fieldType = fieldType[1:len(fieldType)-1]
+		fieldType = fieldType[1 : len(fieldType)-1]
 	}
 
 	pType := getProtoTypeFromBasicApidocType(fieldType)
@@ -107,6 +151,7 @@ func getNormalProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (*pr
 	pField.Type = pType
 
 	pField.Sequence = sequenceNumber
+	//TODO: Translate names as per proto styles? https://developers.google.com/protocol-buffers/docs/style#message-and-field-names
 	pField.Name = aField.Name
 
 	return &pField, nil
@@ -146,8 +191,8 @@ func getProtoTypeFromBasicApidocType(basicType string) string {
 	}
 }
 
-
 type UnsupportedTypeError error
+
 func createUnsupportedError(fieldName string, fieldType string) error {
 	return UnsupportedTypeError(errors.New(fmt.Sprintf("Cannot translate field [%s], field type: [%s] is unsupported", fieldName, fieldType)))
 }
