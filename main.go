@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/emicklei/proto"
@@ -73,9 +74,32 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 	}
 
 	//Unions
+	for _, aUnion := range spec.Unions {
+		pMessage := proto.Message{Name: aUnion.Name}
+		oneOff := proto.Oneof{Name: aUnion.Discriminator}
+		if len(oneOff.Name) == 0 {
+			oneOff.Name = "union"
+		}
+
+		for i, aUnionType := range aUnion.UnionTypes {
+			pType := getProtoTypeFromBasicApidocType(aUnionType.TypeValue) //TODO: how to handle sequence number changes
+			if len(pType) == 0 {
+				panic(fmt.Sprintf("Couldn't find a proto type from union type [%v]", aUnionType))
+			}
+
+			//TODO: OPINION: I decided to use the type name here, should convert to underscore case
+			field := proto.Field{Name: pType, Type: pType, Sequence: i + 1}
+
+			pMessage.Elements = append(
+				pMessage.Elements,
+				&proto.OneOfField{Field: &field},
+			)
+		}
+		pFile.Elements = append(pFile.Elements, &pMessage)
+	}
 
 	//Resources
-	service := proto.Service{Name: spec.Name}
+	service := proto.Service{Name: getSafeServiceName(spec.Name)}
 	pFile.Elements = append(pFile.Elements, &service)
 
 	for _, resource := range spec.Resources {
@@ -83,12 +107,42 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 			rpc := proto.RPC{}
 
 			rpc.Name = getProtoMethodName(resource, operation)
-			//Handle gathering path, query and body params into one argument (or don't bother??)
-			service.Elements = append(service.Elements, rpc)
+			//TODO: Handle gathering path, query and body params into one argument (or don't bother??)
+			service.Elements = append(service.Elements, &rpc)
 		}
 	}
 
 	return pFile
+}
+
+var ProtoIdentifierRegex = regexp.MustCompile(`[A-Za-z_][\w_]*`)
+
+//Gets a safe service name, proto expects /[A-Za-z_][\w_]*/ for service names
+func getSafeServiceName(name string) string {
+	pName := convertPartsToPascalCase(strings.Split(name, " "))
+	if len(ProtoIdentifierRegex.FindString(pName)) != len(pName) {
+		//TODO: use special aproto attribute
+		panic(fmt.Sprintf(
+			"Invalid proto name for service, name was [%v] but protobuf identifier must follow the regex [%v]",
+			name,
+			ProtoIdentifierRegex.String(),
+		))
+	}
+
+	return pName
+}
+
+func convertPartsToPascalCase(parts []string) string {
+	name := ""
+	for _, part := range parts {
+		if len(part) == 0 {
+			continue
+		}
+
+		name += strings.ToUpper(part[:1]) + part[1:]
+	}
+
+	return name
 }
 
 func getProtoMethodName(resource apidoc.Resource, operation apidoc.Operation) string {

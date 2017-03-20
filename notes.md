@@ -1,0 +1,2 @@
+Found a user created BNF for proto files, handy for knowing legal names etc https://groups.google.com/forum/#!topic/protobuf/HMz8YkzWEto
+Importantly it seems identifiers e.g. service names follow this regex `/[A-Za-z_][\w_]*/`

@@ -19,11 +19,12 @@ package apidoc
 */
 
 type Spec struct {
-	Name string `json:"name"`
-	Enums []Enum `json:"enums"`
-	Unions []Union `json:"unions"`
-	Models []Model `json:"models"`
-	Resources []Resource `json:"resources"`
+	Name       string      `json:"name"`
+	Enums      []Enum      `json:"enums"`
+	Unions     []Union     `json:"unions"`
+	Models     []Model     `json:"models"`
+	Resources  []Resource  `json:"resources"`
+	Attributes []Attribute `json:"attributes"`
 }
 
 /*
@@ -35,9 +36,9 @@ type Spec struct {
   "attributes": JSON Array of Attribute (optional),
   "deprecation": JSON Object of Deprecation (optional)
 }
- */
+*/
 type Enum struct {
-	Name string `json:"name"`
+	Name   string      `json:"name"`
 	Values []EnumValue `json:"values"`
 }
 
@@ -48,7 +49,7 @@ type Enum struct {
   "attributes": JSON Array of Attribute (optional),
   "deprecation": JSON Object of Deprecation (optional)
 }
- */
+*/
 type EnumValue struct {
 	Name string `json:"name"`
 }
@@ -64,9 +65,10 @@ type EnumValue struct {
 }
 */
 type Model struct {
-	Name string `json:"name"`
+	Name   string  `json:"name"`
 	Fields []Field `json:"fields"`
 }
+
 /*
 {
   "name": string,
@@ -82,9 +84,9 @@ type Model struct {
 }
 */
 type Field struct {
-	Name string `json:"name"`
-	FieldType string `json:"type"`
-	Required bool `json:"required"`
+	Name         string      `json:"name"`
+	FieldType    string      `json:"type"`
+	Required     bool        `json:"required"`
 	DefaultValue interface{} `json:"default"`
 }
 
@@ -100,10 +102,11 @@ type Field struct {
 }
 */
 type Union struct {
-	Name string `json:"name"`
-	Discriminator string `json:"discriminator"`
-	UnionTypes []UnionValueType `json:"types"`
+	Name          string           `json:"name"`
+	Discriminator string           `json:"discriminator"`
+	UnionTypes    []UnionValueType `json:"types"`
 }
+
 /*
 {
       "type": string,
@@ -111,7 +114,7 @@ type Union struct {
       "attributes": JSON Array of Attribute (optional),
       "deprecation": JSON Object of Deprecation (optional)
     }
- */
+*/
 type UnionValueType struct {
 	TypeValue string `json:"type"`
 }
@@ -127,9 +130,9 @@ type UnionValueType struct {
 }
 */
 type Resource struct {
-	ResourceType string `json:"type"`
-	Path string `json:"path,omitempty"`
-	Operations []Operation `json:"operations"`
+	ResourceType string      `json:"type"`
+	Path         string      `json:"path,omitempty"`
+	Operations   []Operation `json:"operations"`
 }
 
 /*
@@ -145,11 +148,11 @@ type Resource struct {
 }
 */
 type Operation struct {
-	Method string `json:"method"`
-	Path string `json:"path,omitempty"`
-	Body Body `json:"body"`
+	Method     string      `json:"method"`
+	Path       string      `json:"path,omitempty"`
+	Body       Body        `json:"body"`
 	Parameters []Parameter `json:"parameters"`
-	Responses []Response `json:"responses"`
+	Responses  []Response  `json:"responses"`
 }
 
 /*
@@ -159,7 +162,7 @@ type Operation struct {
   "attributes": JSON Array of Attribute (optional),
   "deprecation": JSON Object of Deprecation (optional),
 }
- */
+*/
 type Body struct {
 	BodyType string `json:"type"`
 }
@@ -179,11 +182,11 @@ type Body struct {
 }
 */
 type Parameter struct {
-	Name string `json:"name"`
-	ParameterType string `json:"type"`
-	Location string `json:"location"`
-	Required bool `json:"required"`
-	Default interface{} `json:"default"`
+	Name          string      `json:"name"`
+	ParameterType string      `json:"type"`
+	Location      string      `json:"location"`
+	Required      bool        `json:"required"`
+	Default       interface{} `json:"default"`
 }
 
 /*
@@ -209,12 +212,23 @@ ACTUAL EXAMPLE:
             },
 */
 type Response struct {
-	Code ResponseCode `json:"code"`
-	ResponseType string `json:"type"`
+	Code         ResponseCode `json:"code"`
+	ResponseType string       `json:"type"`
 }
 type ResponseCode struct {
 	Integer ResponseCodeValue `json:"integer"`
 }
 type ResponseCodeValue struct {
 	Value int `json:"value"`
+}
+
+/*
+{
+  "name": string,
+  "value": JSON Object
+}
+*/
+type Attribute struct {
+	Name  string                 `json:"name"`
+	Value map[string]interface{} `json:"-"`
 }

@@ -231,5 +231,12 @@
       "attributes": []
     }
   ],
-  "attributes": []
+  "attributes": [
+    {
+      "name": "aproto:service-name-replace",
+      "value": {
+        "regexMaps" : [{"regex": "[^\\w_]", "replace": "_"}]
+      }
+    }
+  ]
 }
