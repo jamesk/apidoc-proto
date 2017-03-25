@@ -230,5 +230,5 @@ type ResponseCodeValue struct {
 */
 type Attribute struct {
 	Name  string                 `json:"name"`
-	Value map[string]interface{} `json:"-"`
+	Value map[string]interface{} `json:"value"`
 }

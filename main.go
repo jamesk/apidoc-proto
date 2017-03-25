@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	"encoding/json"
+
 	"github.com/emicklei/proto"
 	"github.com/jamesk/apidoc-proto/apidoc"
 )
@@ -99,7 +101,21 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 	}
 
 	//Resources
-	service := proto.Service{Name: getSafeServiceName(spec.Name)}
+	var nameReplace ServiceNameReplaceAttribute
+	for _, attr := range spec.Attributes {
+		if attr.Name == ServiceNameReplaceAttributeName {
+			//TODO: inefficient, any actual performance impact?
+			d, err := json.Marshal(attr.Value)
+			fmt.Println(attr.Value)
+			if err != nil {
+				panic(err)
+			}
+
+			json.Unmarshal(d, &nameReplace)
+			fmt.Println(nameReplace)
+		}
+	}
+	service := proto.Service{Name: getSafeServiceName(spec.Name, nameReplace)}
 	pFile.Elements = append(pFile.Elements, &service)
 
 	for _, resource := range spec.Resources {
@@ -117,14 +133,48 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 
 var ProtoIdentifierRegex = regexp.MustCompile(`[A-Za-z_][\w_]*`)
 
+const (
+	ServiceNameReplaceAttributeName = "aproto:service-name-replace"
+)
+
+/*
+{
+      "name": "aproto:service-name-replace",
+      "value": {
+        "regexMaps" : [{"regex": "[^\\w_]", "replace": "_"}]
+      }
+    }
+*/
+type ServiceNameReplaceAttribute struct {
+	RegexMaps []ServiceNameReplaceAttributeRegexMap `json:"regexMaps"`
+}
+
+type ServiceNameReplaceAttributeRegexMap struct {
+	Regex   string `json:"regex"`   //The regex to search for
+	Replace string `json:"replace"` //The replace string, see regexp.Regex.Expand for details
+}
+
 //Gets a safe service name, proto expects /[A-Za-z_][\w_]*/ for service names
-func getSafeServiceName(name string) string {
-	pName := convertPartsToPascalCase(strings.Split(name, " "))
+func getSafeServiceName(name string, replaceAttribute ServiceNameReplaceAttribute) string {
+	replacedName := name
+	for _, m := range replaceAttribute.RegexMaps {
+		r, err := regexp.Compile(m.Regex)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("Replacing, name currently: [%v], regex [%v]\n", replacedName, m.Regex)
+		replacedName = r.ReplaceAllString(replacedName, m.Replace)
+		fmt.Printf("Done replacing, name currently: [%v]\n", replacedName)
+	}
+
+	pName := convertPartsToPascalCase(strings.Split(replacedName, " "))
 	if len(ProtoIdentifierRegex.FindString(pName)) != len(pName) {
-		//TODO: use special aproto attribute
 		panic(fmt.Sprintf(
-			"Invalid proto name for service, name was [%v] but protobuf identifier must follow the regex [%v]",
+			"Invalid proto name for service, processed name was [%v], original name was [%v] ([%v] after replacing) but protobuf identifier must follow the regex [%v]",
+			pName,
 			name,
+			replacedName,
 			ProtoIdentifierRegex.String(),
 		))
 	}
@@ -146,17 +196,19 @@ func convertPartsToPascalCase(parts []string) string {
 }
 
 func getProtoMethodName(resource apidoc.Resource, operation apidoc.Operation) string {
-	if len(operation.Path) == 0 {
-		return convertPathToProtoName(resource.Path)
+	path := resource.Path
+	if len(path) == 0 {
+		path = resource.ResourceType
 	}
 
-	parts := append(strings.Split(resource.Path, "/"), strings.Split(operation.Path, "/")...)
-
-	return convertPathSegmentsToProtoName(parts)
-}
-
-func convertPathToProtoName(path string) string {
-	parts := strings.Split(strings.TrimSuffix(path, "/"), "/")
+	parts := []string{}
+	method := strings.ToLower(operation.Method)
+	if len(method) != 0 {
+		method = strings.ToUpper(method[:1]) + method[1:]
+		parts = append(parts, method)
+	}
+	parts = append(parts, strings.Split(path, "/")...)
+	parts = append(parts, strings.Split(operation.Path, "/")...)
 
 	return convertPathSegmentsToProtoName(parts)
 }
@@ -169,6 +221,7 @@ func convertPathSegmentsToProtoName(parts []string) string {
 		}
 		if part[0] == ':' {
 			continue
+			//TODO: panic("Cannot handle path variables")
 		}
 
 		name += strings.ToUpper(part[:1]) + part[1:]

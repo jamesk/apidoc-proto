@@ -235,7 +235,10 @@
     {
       "name": "aproto:service-name-replace",
       "value": {
-        "regexMaps" : [{"regex": "[^\\w_]", "replace": "_"}]
+        "regexMaps" : [
+          {"regex": "-", "replace": " "},
+          {"regex": "[^\\w_ ]", "replace": "_"}
+        ]
       }
     }
   ]
