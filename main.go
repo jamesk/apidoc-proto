@@ -106,13 +106,11 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 		if attr.Name == ServiceNameReplaceAttributeName {
 			//TODO: inefficient, any actual performance impact?
 			d, err := json.Marshal(attr.Value)
-			fmt.Println(attr.Value)
 			if err != nil {
 				panic(err)
 			}
 
 			json.Unmarshal(d, &nameReplace)
-			fmt.Println(nameReplace)
 		}
 	}
 	service := proto.Service{Name: getSafeServiceName(spec.Name, nameReplace)}
@@ -123,7 +121,28 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 			rpc := proto.RPC{}
 
 			rpc.Name = getProtoMethodName(resource, operation)
-			//TODO: Handle gathering path, query and body params into one argument (or don't bother??)
+			//TODO: Handle path, query and body params?? Attributes to handle behaviour?
+			if len(operation.Body.BodyType) != 0 {
+				_, isMap, err := getMapType(operation.Body.BodyType)
+				if err != nil {
+					panic(err)
+				}
+
+				if isMap {
+					panic("Map bodys is unsupported at the moment")
+				}
+
+				arrayType, isArray, err := getArrayType(operation.Body.BodyType)
+				if err != nil {
+					panic(err)
+				}
+
+				rpc.StreamsRequest = isArray
+				rpc.RequestType = getProtoTypeFromBasicApidocType(arrayType)
+			} else {
+				rpc.RequestType = "google.protobuf.Empty"
+			}
+
 			service.Elements = append(service.Elements, &rpc)
 		}
 	}
@@ -202,6 +221,7 @@ func getProtoMethodName(resource apidoc.Resource, operation apidoc.Operation) st
 	}
 
 	parts := []string{}
+	//TODO: attribute to ignore method?
 	method := strings.ToLower(operation.Method)
 	if len(method) != 0 {
 		method = strings.ToUpper(method[:1]) + method[1:]
@@ -231,25 +251,53 @@ func convertPathSegmentsToProtoName(parts []string) string {
 }
 
 func getProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (proto.Visitee, error) {
-	if strings.HasPrefix(aField.FieldType, "map[") {
-		return getMapProtoFieldFromApidoc(aField, sequenceNumber)
+	mapType, isMap, err := getMapType(aField.FieldType)
+	if err != nil {
+		return nil, err
 	}
 
+	if isMap {
+		return getMapProtoFieldFromApidoc(aField, mapType, sequenceNumber)
+	}
 	return getNormalProtoFieldFromApidoc(aField, sequenceNumber)
+}
+
+func getMapType(value string) (string, bool, error) {
+	mapType := value
+	if strings.HasPrefix(mapType, "map[") {
+		if !strings.HasSuffix(mapType, "]") {
+			return value, false, fmt.Errorf("Invalid type, starts with a [ but does not end with one, type was [%v]", value)
+		}
+
+		return mapType[4 : len(mapType)-1], true, nil
+	}
+
+	return value, false, nil
+}
+
+func getArrayType(value string) (string, bool, error) {
+	arrayType := value
+	if strings.HasPrefix(arrayType, "[") {
+		if !strings.HasSuffix(arrayType, "]") {
+			return value, false, fmt.Errorf("Invalid type, starts with a [ but does not end with one, type was [%v]", value)
+		}
+
+		return arrayType[1 : len(arrayType)-1], true, nil
+	}
+
+	return value, false, nil
 }
 
 func getNormalProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (*proto.NormalField, error) {
 	pField := proto.NormalField{Field: &proto.Field{}}
 
-	fieldType := aField.FieldType
-	if strings.HasPrefix(fieldType, "[") {
-		if !strings.HasSuffix(fieldType, "]") {
-			return nil, errors.New("Invalid type, starts with a [ but does not end with one")
-		}
-
-		pField.Repeated = true
-		fieldType = fieldType[1 : len(fieldType)-1]
+	fieldType, isArray, err := getArrayType(aField.FieldType)
+	if err != nil {
+		return nil, err
 	}
+
+	pField.Repeated = isArray
+	fieldType = fieldType[1 : len(fieldType)-1]
 
 	pType := getProtoTypeFromBasicApidocType(fieldType)
 	if len(pType) == 0 {
@@ -264,10 +312,11 @@ func getNormalProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (*pr
 	return &pField, nil
 }
 
-func getMapProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (*proto.MapField, error) {
+func getMapProtoFieldFromApidoc(aField apidoc.Field, mapType string, sequenceNumber int) (*proto.MapField, error) {
 	return &proto.MapField{}, createUnsupportedError(aField.Name, "map")
 }
 
+//Input is a "basic" type i.e. not a map or array
 func getProtoTypeFromBasicApidocType(basicType string) string {
 	switch basicType {
 	case "boolean":
