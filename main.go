@@ -13,8 +13,19 @@ import (
 	"github.com/jamesk/apidoc-proto/apidoc"
 )
 
+const usageMessage = `apidoc-proto is a tool to convert apidoc.me to .proto format
+
+Usage:
+	apidoc-proto INPUT.JSON OUTPUT.proto
+`
+
 func main() {
-	aSpec, err := apidoc.GetSpecFromFile("test_service.json")
+	if len(os.Args) != 2 && len(os.Args) != 3 {
+		fmt.Printf("Need 1 or 2 arguments:\n%v", usageMessage)
+		return
+	}
+
+	aSpec, err := apidoc.GetSpecFromFile(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
@@ -22,7 +33,11 @@ func main() {
 	pFile := getProtoFromAPISpec(aSpec)
 
 	//TODO: safe name?
-	f, err := os.Create(aSpec.Name + ".proto")
+	outputFilepath := aSpec.Name + ".proto"
+	if len(os.Args) > 3 {
+		outputFilepath = os.Args[2]
+	}
+	f, err := os.Create(outputFilepath)
 	if err != nil {
 		panic(err)
 	}
@@ -129,15 +144,14 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 			if rpc.Name == "" {
 				continue //TODO: fail fast? Leaving in to handle /:id/ type paths
 			}
+
 			//TODO: Handle path, query and body params?? Attributes to handle behaviour?
 			request, err := getRpcParameter(operation.Body.BodyType, operation.Body.Attributes)
 			if err != nil {
 				panic(err)
 			}
-
 			rpc.StreamsRequest = request.IsStream
 			rpc.RequestType = request.RpcType
-
 			if len(request.Message.Name) > 0 {
 				pFile.Elements = append(pFile.Elements, &request.Message)
 			}

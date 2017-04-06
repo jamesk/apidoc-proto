@@ -9,6 +9,15 @@ From the proto spec you can then generate code in the language of your choice.
 
 # Example
 
-`go build && ./apidoc-proto && protoc test-apidoc-proto-ticket.proto --go_out=plugins=grpc:/tmp`
+To run just the conversion:
 
-You should find your generated go code in `/tmp/test-apidoc-proto-ticket.pb.go`
+`go build && ./apidoc-proto test_service.json test_service.proto`
+
+To get generated gRPC code:
+
+`protoc test_service.proto --go_out=plugins=grpc:/tmp`
+
+You should then find your generated go code in `/tmp/test_service.pb.go`
+
+(See http://www.grpc.io/docs/quickstart/ for `protoc` instructions)
+
