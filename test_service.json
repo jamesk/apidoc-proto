@@ -223,8 +223,15 @@
           ],
           "attributes": [],
           "body": {
-            "type": "ticket",
-            "attributes": []
+            "type": "[ticket]",
+            "attributes": [
+              {
+                "name": "aproto:array-as-stream",
+                "value": {
+                  "value" : true
+                }
+              }
+            ]
           }
         }
       ],

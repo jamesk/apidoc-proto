@@ -63,3 +63,4 @@ fabric.properties
 #Project Ignores
 test*.proto
 !/test.proto
+apidoc-proto

@@ -2,13 +2,12 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
-
-	"encoding/json"
 
 	"github.com/emicklei/proto"
 	"github.com/jamesk/apidoc-proto/apidoc"
@@ -44,6 +43,12 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 	pFile.Elements = append(
 		pFile.Elements,
 		&proto.Syntax{Value: syntaxVersion},
+	)
+
+	//TODO:hack for rpc, not always needed
+	pFile.Elements = append(
+		pFile.Elements,
+		&proto.Import{Filename: "google/protobuf/empty.proto"},
 	)
 
 	for _, aEnum := range spec.Enums {
@@ -121,27 +126,24 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 			rpc := proto.RPC{}
 
 			rpc.Name = getProtoMethodName(resource, operation)
-			//TODO: Handle path, query and body params?? Attributes to handle behaviour?
-			if len(operation.Body.BodyType) != 0 {
-				_, isMap, err := getMapType(operation.Body.BodyType)
-				if err != nil {
-					panic(err)
-				}
-
-				if isMap {
-					panic("Map bodys is unsupported at the moment")
-				}
-
-				arrayType, isArray, err := getArrayType(operation.Body.BodyType)
-				if err != nil {
-					panic(err)
-				}
-
-				rpc.StreamsRequest = isArray
-				rpc.RequestType = getProtoTypeFromBasicApidocType(arrayType)
-			} else {
-				rpc.RequestType = "google.protobuf.Empty"
+			if rpc.Name == "" {
+				continue //TODO: fail fast? Leaving in to handle /:id/ type paths
 			}
+			//TODO: Handle path, query and body params?? Attributes to handle behaviour?
+			request, err := getRpcParameter(operation.Body.BodyType, operation.Body.Attributes)
+			if err != nil {
+				panic(err)
+			}
+
+			rpc.StreamsRequest = request.IsStream
+			rpc.RequestType = request.RpcType
+
+			if len(request.Message.Name) > 0 {
+				pFile.Elements = append(pFile.Elements, &request.Message)
+			}
+
+			//TODO: finish response types
+			rpc.ReturnsType = "google.protobuf.Empty"
 
 			service.Elements = append(service.Elements, &rpc)
 		}
@@ -153,8 +155,21 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 var ProtoIdentifierRegex = regexp.MustCompile(`[A-Za-z_][\w_]*`)
 
 const (
+	ArrayAsStreamAttributeName      = "aproto:array-as-stream"
 	ServiceNameReplaceAttributeName = "aproto:service-name-replace"
 )
+
+/*
+{
+	"name": "aproto:array-as-stream",
+	"value": {
+	  "value" : true
+	}
+}
+*/
+type ArrayAsStreamAttribute struct {
+	Value bool `json:"value"`
+}
 
 /*
 {
@@ -240,7 +255,7 @@ func convertPathSegmentsToProtoName(parts []string) string {
 			continue
 		}
 		if part[0] == ':' {
-			continue
+			return ""
 			//TODO: panic("Cannot handle path variables")
 		}
 
@@ -295,9 +310,7 @@ func getNormalProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (*pr
 	if err != nil {
 		return nil, err
 	}
-
 	pField.Repeated = isArray
-	fieldType = fieldType[1 : len(fieldType)-1]
 
 	pType := getProtoTypeFromBasicApidocType(fieldType)
 	if len(pType) == 0 {

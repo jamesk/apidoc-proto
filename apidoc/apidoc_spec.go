@@ -153,6 +153,7 @@ type Operation struct {
 	Body       Body        `json:"body"`
 	Parameters []Parameter `json:"parameters"`
 	Responses  []Response  `json:"responses"`
+	Attributes []Attribute `json:"attributes"`
 }
 
 /*
@@ -164,7 +165,8 @@ type Operation struct {
 }
 */
 type Body struct {
-	BodyType string `json:"type"`
+	BodyType   string      `json:"type"`
+	Attributes []Attribute `json:"attributes"`
 }
 
 /*
