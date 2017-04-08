@@ -139,6 +139,7 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 	pFile.Elements = append(pFile.Elements, &service)
 
 	for _, resource := range spec.Resources {
+		//TODO: default to only taking first operation, make attribute to show that all operations should be considered.
 		for _, operation := range resource.Operations {
 			rpc := proto.RPC{}
 
@@ -159,7 +160,21 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 			}
 
 			//TODO: finish response types
-			rpc.ReturnsType = "google.protobuf.Empty"
+			if len(operation.Responses) == 0 {
+				rpc.ReturnsType = "google.protobuf.Empty"
+			} else {
+				//TODO: handle multiple responses (only when an attribute is set)
+				responseType := operation.Responses[0].ResponseType
+				response, err := getRpcParameter(responseType, []apidoc.Attribute{})
+				if err != nil {
+					panic(err)
+				}
+				rpc.StreamsReturns = response.IsStream
+				rpc.ReturnsType = response.RpcType
+				if len(response.Message.Name) > 0 {
+					pFile.Elements = append(pFile.Elements, &response.Message)
+				}
+			}
 
 			service.Elements = append(service.Elements, &rpc)
 		}

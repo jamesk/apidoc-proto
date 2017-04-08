@@ -242,22 +242,7 @@
       "plural": "releases",
       "operations": [
         {
-          "method": "GET",
-          "parameters": [],
-          "responses": [
-            {
-              "code": {
-                "integer": {
-                  "value": 200
-                }
-              },
-              "type": "[integer]"
-            }
-          ],
-          "attributes": []
-        },
-        {
-          "method": "POST",
+          "method": "",
           "parameters": [],
           "responses": [
             {
