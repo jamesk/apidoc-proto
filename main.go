@@ -25,6 +25,7 @@ func main() {
 		return
 	}
 
+	fmt.Printf("Reading apidoc spec: [%v]\n", os.Args[1])
 	aSpec, err := apidoc.GetSpecFromFile(os.Args[1])
 	if err != nil {
 		panic(err)
@@ -34,9 +35,10 @@ func main() {
 
 	//TODO: safe name?
 	outputFilepath := aSpec.Name + ".proto"
-	if len(os.Args) > 3 {
+	if len(os.Args) > 2 {
 		outputFilepath = os.Args[2]
 	}
+	fmt.Printf("Outputting .proto file: [%v]\n", outputFilepath)
 	f, err := os.Create(outputFilepath)
 	if err != nil {
 		panic(err)
@@ -211,9 +213,9 @@ func getSafeServiceName(name string, replaceAttribute ServiceNameReplaceAttribut
 			panic(err)
 		}
 
-		fmt.Printf("Replacing, name currently: [%v], regex [%v]\n", replacedName, m.Regex)
+		//TODO: logging fmt.Printf("Replacing, name currently: [%v], regex [%v]\n", replacedName, m.Regex)
 		replacedName = r.ReplaceAllString(replacedName, m.Replace)
-		fmt.Printf("Done replacing, name currently: [%v]\n", replacedName)
+		//TODO: logging fmt.Printf("Done replacing, name currently: [%v]\n", replacedName)
 	}
 
 	pName := convertPartsToPascalCase(strings.Split(replacedName, " "))
@@ -286,7 +288,7 @@ func getProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (proto.Vis
 	}
 
 	if isMap {
-		return getMapProtoFieldFromApidoc(aField, mapType, sequenceNumber)
+		return getMapProtoField(aField.Name, mapType, sequenceNumber)
 	}
 	return getNormalProtoFieldFromApidoc(aField, sequenceNumber)
 }
@@ -339,8 +341,15 @@ func getNormalProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (*pr
 	return &pField, nil
 }
 
-func getMapProtoFieldFromApidoc(aField apidoc.Field, mapType string, sequenceNumber int) (*proto.MapField, error) {
-	return &proto.MapField{}, createUnsupportedError(aField.Name, "map")
+func getMapProtoField(name string, mapType string, sequenceNumber int) (*proto.MapField, error) {
+	pField := proto.MapField{Field: &proto.Field{}}
+
+	pField.Sequence = sequenceNumber
+	pField.Name = name
+	pField.Type = mapType
+	pField.KeyType = "string"
+
+	return &pField, nil
 }
 
 //Input is a "basic" type i.e. not a map or array

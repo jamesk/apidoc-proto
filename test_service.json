@@ -236,6 +236,47 @@
         }
       ],
       "attributes": []
+    },
+    {
+      "type": "release",
+      "plural": "releases",
+      "operations": [
+        {
+          "method": "GET",
+          "parameters": [],
+          "responses": [
+            {
+              "code": {
+                "integer": {
+                  "value": 200
+                }
+              },
+              "type": "[integer]"
+            }
+          ],
+          "attributes": []
+        },
+        {
+          "method": "POST",
+          "parameters": [],
+          "responses": [
+            {
+              "code": {
+                "integer": {
+                  "value": 201
+                }
+              },
+              "type": "integer"
+            }
+          ],
+          "attributes": [],
+          "body": {
+            "type": "map[ticket]",
+            "attributes": []
+          }
+        }
+      ],
+      "attributes": []
     }
   ],
   "attributes": [
