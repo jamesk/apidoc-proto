@@ -106,12 +106,13 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 		}
 
 		for i, aUnionType := range aUnion.UnionTypes {
-			pType := getProtoTypeFromBasicApidocType(aUnionType.TypeValue) //TODO: how to handle sequence number changes
+			pType := getProtoTypeFromBasicApidocType(aUnionType.TypeValue)
 			if len(pType) == 0 {
 				panic(fmt.Sprintf("Couldn't find a proto type from union type [%v]", aUnionType))
 			}
 
-			//TODO: OPINION: I decided to use the type name here, should convert to underscore case
+			//TODO: OPINION: I decided to use the type as the name here, should convert to underscore case? (as per https://developers.google.com/protocol-buffers/docs/style#message-and-field-names)
+			//TODO: how to handle sequence number changes
 			field := proto.Field{Name: pType, Type: pType, Sequence: i + 1}
 
 			pMessage.Elements = append(
@@ -148,7 +149,7 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 				continue //TODO: fail fast? Leaving in to handle /:id/ type paths
 			}
 
-			//TODO: Handle path, query and body params?? Attributes to handle behaviour?
+			//TODO: Handle path and query params? Attributes to handle behaviour?
 			request, err := getRpcParameter(operation.Body.BodyType, operation.Body.Attributes)
 			if err != nil {
 				panic(err)
@@ -159,7 +160,6 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 				pFile.Elements = append(pFile.Elements, &request.Message)
 			}
 
-			//TODO: finish response types
 			if len(operation.Responses) == 0 {
 				rpc.ReturnsType = "google.protobuf.Empty"
 			} else {

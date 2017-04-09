@@ -216,6 +216,7 @@ ACTUAL EXAMPLE:
 type Response struct {
 	Code         ResponseCode `json:"code"`
 	ResponseType string       `json:"type"`
+	Attributes   []Attribute  `json:"attributes"`
 }
 type ResponseCode struct {
 	Integer ResponseCodeValue `json:"integer"`
