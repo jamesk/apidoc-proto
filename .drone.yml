@@ -3,6 +3,11 @@ workspace:
   path: src/github.com/jamesk/apidoc-proto/
 
 pipeline:
+  debug-cmd:
+    image: gtoet/govendor:1.0
+    commands:
+      - ls
+
   vendor-sync:
     image: gtoet/govendor:1.0
     commands:
