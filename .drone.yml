@@ -5,10 +5,7 @@ workspace:
 pipeline:
   vendor-sync:
     image: gtoet/govendor:1.0
-    commands: 
-      - pwd
-      - ls
-      - echo ${DRONE_REPO}
+    commands:
       - govendor sync
 
   build:
