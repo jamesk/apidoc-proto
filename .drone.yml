@@ -1,10 +1,16 @@
+workspace:
+  base: /go
+  path: src/github.com/jamesk/apidoc-proto/
+
 pipeline:
   vendor-sync:
-    image: gtoet/govendor:1.0.0
+    image: gtoet/govendor:1.0
     commands: 
-      - /go/govendor sync
+      - pwd
+      - ls
+      - govendor sync
 
   build:
-    image: gtoet/govendor:1.0.0
+    image: gtoet/govendor:1.0
     commands: 
       - go build
