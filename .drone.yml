@@ -1,5 +1,5 @@
 pipeline:
   build:
-    image: golang:1.8.0
+    image: gtoet/govendor:1.0.0
     commands: 
       - go build
