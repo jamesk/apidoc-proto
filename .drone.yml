@@ -2,7 +2,7 @@ pipeline:
   vendor-sync:
     image: gtoet/govendor:1.0.0
     commands: 
-      - govendor sync
+      - /go/govendor sync
 
   build:
     image: gtoet/govendor:1.0.0
