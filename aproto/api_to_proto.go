@@ -1,11 +1,9 @@
-package main
+package aproto
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
@@ -13,48 +11,11 @@ import (
 	"github.com/jamesk/apidoc-proto/apidoc"
 )
 
-const usageMessage = `apidoc-proto is a tool to convert apidoc.me to .proto format
-
-Usage:
-	apidoc-proto INPUT.JSON OUTPUT.proto
-`
-
-func main() {
-	if len(os.Args) != 2 && len(os.Args) != 3 {
-		fmt.Printf("Need 1 or 2 arguments:\n%v", usageMessage)
-		return
-	}
-
-	fmt.Printf("Reading apidoc spec: [%v]\n", os.Args[1])
-	aSpec, err := apidoc.GetSpecFromFile(os.Args[1])
-	if err != nil {
-		panic(err)
-	}
-
-	pFile := getProtoFromAPISpec(aSpec)
-
-	//TODO: safe name?
-	outputFilepath := aSpec.Name + ".proto"
-	if len(os.Args) > 2 {
-		outputFilepath = os.Args[2]
-	}
-	fmt.Printf("Outputting .proto file: [%v]\n", outputFilepath)
-	f, err := os.Create(outputFilepath)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	w := bufio.NewWriter(f)
-	proto.NewFormatter(w, "  ").Format(&pFile)
-	w.Flush()
-}
-
 const (
 	syntaxVersion = "proto3"
 )
 
-func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
+func GetProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 	pFile := proto.Proto{}
 
 	pFile.Elements = append(
@@ -66,6 +27,11 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 	pFile.Elements = append(
 		pFile.Elements,
 		&proto.Import{Filename: "google/protobuf/empty.proto"},
+	)
+	//TODO: hack for Object types, not always needed
+	pFile.Elements = append(
+		pFile.Elements,
+		&proto.Import{Filename: "google/protobuf/any.proto"},
 	)
 
 	for _, aEnum := range spec.Enums {
@@ -115,11 +81,12 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 			//TODO: how to handle sequence number changes
 			field := proto.Field{Name: pType, Type: pType, Sequence: i + 1}
 
-			pMessage.Elements = append(
-				pMessage.Elements,
+			oneOff.Elements = append(
+				oneOff.Elements,
 				&proto.OneOfField{Field: &field},
 			)
 		}
+		pMessage.Elements = append(pMessage.Elements, &oneOff)
 		pFile.Elements = append(pFile.Elements, &pMessage)
 	}
 
@@ -136,6 +103,11 @@ func getProtoFromAPISpec(spec apidoc.Spec) proto.Proto {
 			json.Unmarshal(d, &nameReplace)
 		}
 	}
+
+	if len(spec.Resources) == 0 {
+		return pFile
+	}
+
 	service := proto.Service{Name: getSafeServiceName(spec.Name, nameReplace)}
 	pFile.Elements = append(pFile.Elements, &service)
 
@@ -334,21 +306,28 @@ func getArrayType(value string) (string, bool, error) {
 	return value, false, nil
 }
 
-func getNormalProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (*proto.NormalField, error) {
-	pField := proto.NormalField{Field: &proto.Field{}}
-
+func getNormalProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (proto.Visitee, error) {
 	fieldType, isArray, err := getArrayType(aField.FieldType)
 	if err != nil {
 		return nil, err
 	}
-	pField.Repeated = isArray
 
 	pType := getProtoTypeFromBasicApidocType(fieldType)
 	if len(pType) == 0 {
+		if fieldType == "object" {
+			if isArray {
+				return nil, createUnsupportedError(aField.Name, aField.FieldType)
+			}
+
+			return getMapProtoField(aField.Name, "google.protobuf.Any", sequenceNumber)
+		}
+
 		return nil, createUnsupportedError(aField.Name, pType)
 	}
-	pField.Type = pType
 
+	pField := proto.NormalField{Field: &proto.Field{}}
+	pField.Repeated = isArray
+	pField.Type = pType
 	pField.Sequence = sequenceNumber
 	//TODO: Translate names as per proto styles? https://developers.google.com/protocol-buffers/docs/style#message-and-field-names
 	pField.Name = aField.Name
@@ -356,12 +335,16 @@ func getNormalProtoFieldFromApidoc(aField apidoc.Field, sequenceNumber int) (*pr
 	return &pField, nil
 }
 
-func getMapProtoField(name string, mapType string, sequenceNumber int) (*proto.MapField, error) {
+func getMapProtoField(name string, mapType string, sequenceNumber int) (proto.Visitee, error) {
 	pField := proto.MapField{Field: &proto.Field{}}
 
 	pField.Sequence = sequenceNumber
 	pField.Name = name
-	pField.Type = mapType
+	pType := getProtoTypeFromBasicApidocType(mapType)
+	if len(pType) == 0 {
+		return nil, createUnsupportedError(name, pType)
+	}
+	pField.Type = pType
 	pField.KeyType = "string"
 
 	return &pField, nil
@@ -389,7 +372,7 @@ func getProtoTypeFromBasicApidocType(basicType string) string {
 	case "string":
 		return "string"
 	case "unit":
-		return ""
+		return "google.protobuf.Empty"
 	case "uuid":
 		return "string"
 	default:

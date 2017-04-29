@@ -1,0 +1,18 @@
+
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/any.proto";
+
+message message1 {
+  string string = 1;
+}
+message message2 {
+  bool boolean = 1;
+}
+message union_model {
+  oneof union {
+    message1 message1 = 1;
+    message2 message2 = 2;
+  }
+}

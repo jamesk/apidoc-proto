@@ -1,0 +1,57 @@
+{
+  "apidoc": {
+    "version": "0.11.68"
+  },
+  "name": "test",
+  "organization": {
+  },
+  "application": {
+    "key": "test"
+  },
+  "namespace": "com.gtoet.apidoc-proto.test",
+  "version": "0.0.1",
+  "info": {},
+  "headers": [],
+  "imports": [],
+  "enums": [],
+  "unions": [
+    {
+      "name": "union_model",
+      "types": [
+        {
+          "type": "message1",
+          "attributes": []
+        },
+        {
+          "type": "message2",
+          "attributes": []
+        }
+      ],
+      "attributes": []
+    }
+  ],
+  "models": [
+    {
+      "name": "message1",
+      "fields": [
+        {
+          "name": "string",
+          "type": "string"
+        }
+      ],
+      "attributes": []
+    },
+    {
+      "name": "message2",
+      "fields": [
+        {
+          "name": "boolean",
+          "type": "boolean"
+        }
+      ],
+      "attributes": []
+    }
+  ],
+  "resources": [],
+  "attributes": []
+}

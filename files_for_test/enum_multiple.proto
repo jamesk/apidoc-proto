@@ -1,0 +1,16 @@
+
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/any.proto";
+
+enum anEnum {
+  first  = 0;
+  second = 1;
+  third  = 2;
+}
+enum anEnum {
+  a = 0;
+  b = 1;
+  c = 2;
+}

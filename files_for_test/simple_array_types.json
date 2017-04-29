@@ -1,0 +1,65 @@
+{
+  "apidoc": {
+    "version": "0.11.68"
+  },
+  "name": "test",
+  "organization": {
+  },
+  "application": {
+    "key": "test"
+  },
+  "namespace": "com.gtoet.apidoc-proto.test",
+  "version": "0.0.1",
+  "info": {},
+  "headers": [],
+  "imports": [],
+  "enums": [],
+  "unions": [],
+  "models": [
+    {
+      "name": "simple_array_type",
+      "plural": "simple_array_types",
+      "fields": [
+        {
+          "name": "boolean",
+          "type": "[boolean]"
+        },
+        {
+          "name": "date_iso8601",
+          "type": "[date-iso8601]"
+        },
+        {
+          "name": "date_time_iso8601",
+          "type": "[date-time-iso8601]"
+        },
+        {
+          "name": "double",
+          "type": "[double]"
+        },
+        {
+          "name": "integer",
+          "type": "[integer]"
+        },
+        {
+          "name": "long",
+          "type": "[long]"
+        },
+        {
+          "name": "string",
+          "type": "[string]"
+        },
+        {
+          "name": "unit",
+          "type": "[unit]"
+        },
+        {
+          "name": "uuid",
+          "type": "[uuid]"
+        }
+      ],
+      "attributes": []
+    }
+  ],
+  "resources": [],
+  "attributes": []
+}

@@ -1,0 +1,17 @@
+
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/any.proto";
+
+message simple_map_type {
+  map <string,bool                 >           boolean = 1;
+  map <string,string               >      date_iso8601 = 2;
+  map <string,string               > date_time_iso8601 = 3;
+  map <string,double               >            double = 4;
+  map <string,int32                >           integer = 5;
+  map <string,int64                >              long = 6;
+  map <string,string               >            string = 7;
+  map <string,google.protobuf.Empty>              unit = 8;
+  map <string,string               >              uuid = 9;
+}

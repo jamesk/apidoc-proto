@@ -1,4 +1,4 @@
-package main
+package aproto
 
 import (
 	"encoding/json"

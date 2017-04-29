@@ -1,0 +1,17 @@
+
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/any.proto";
+
+message simple_array_type {
+  repeated                  bool boolean           = 1;
+  repeated                string date_iso8601      = 2;
+  repeated                string date_time_iso8601 = 3;
+  repeated                double double            = 4;
+  repeated                 int32 integer           = 5;
+  repeated                 int64 long              = 6;
+  repeated                string string            = 7;
+  repeated google.protobuf.Empty unit              = 8;
+  repeated                string uuid              = 9;
+}
