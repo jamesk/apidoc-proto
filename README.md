@@ -11,7 +11,7 @@ From the proto spec you can then generate code in the language of your choice.
 
 To run just the conversion:
 
-`go build && ./apidoc-proto test_service.json test_service.proto`
+`cd cli && go build && ./cli ../test_service.json ../test_service.proto && cd ..`
 
 To get generated gRPC code:
 
